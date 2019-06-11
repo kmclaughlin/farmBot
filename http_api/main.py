@@ -35,7 +35,7 @@ try:
 
             #Clear Receive Log
             log = open("http_api/public/receiveLog.csv","w")
-            log.write("Date and Time,Arm Response\n")
+            log.write("Date and Time,Farmbot Response\n")
             log.close()
 
             #Return Message
@@ -59,14 +59,14 @@ try:
                     log.write(currentDateTime+","+command+"\n")
 
                 #Write Command Passed to Serial Port
-                self.leftArm.reset_input_buffer()
+                self.ser.reset_input_buffer()
                 payload = (str(command)+"\r\n").encode()
-                self.leftArm.write(payload)
+                self.ser.write(payload)
 
                 #Read Response if Avalible
                 response = "VOID"
                 try:
-                    response = self.leftArm.readline().decode('utf-8')
+                    response = self.ser.readline().decode('utf-8')
                 except:
                     response = "NULL\n"
                     
@@ -90,7 +90,7 @@ try:
 
             try:
                 #Open Serial Connection
-                self.leftArm = serial.Serial(
+                self.ser = serial.Serial(
                     port='\\.\COM8',
                     baudrate=115200,
                     parity=serial.PARITY_NONE,
@@ -98,7 +98,7 @@ try:
                     bytesize=serial.EIGHTBITS
                     )
                 self.connected = True
-                status = currentDateTime + " - INFO: Left arm arduino connected to "+self.leftArm.name+"\n"
+                status = currentDateTime + " - INFO: Farmbot arduino connected to "+self.ser.name+"\n"
             except:
                 status = currentDateTime + " - ERROR: Could not establish a connection with Arduino\n"
       
