@@ -13,20 +13,23 @@
     <img class="center" src="public/logo.png" width="200">
 
     <h1>Farmbot API</h1>
-
+    
         <button class="button" onclick="callCommand('connect')">Connect</button>
         <button class="button" onclick="callCommand('clearLogs')">Clear Logs</button>
 
     <h2>Interaction</h2>
 
     <p>Enter a command to pass to the arm and press send to deliver.</p>
-    <input id="inputCommand" type="text" name="command" value="m020s45">
+    <input id="inputCommand" type="text" name="command" value="">
     <button class="button" onclick="actionSendData()">Send</button>
 
     <h2>Status Message</h2>
         
-        <p id="status"></p>
+        <p id="status">When commands are sent, their status is shown here.</p>
 
+    <h2>Serial Monitor</h2>
+
+    <p><iframe id="monitor" src="public/serialMonitor.txt" frameborder="1" height="300" width=100%"></iframe></p>
     <h2>Logs</h2>
 
         <form method="get" action="public/transmitLog.csv">
@@ -64,6 +67,12 @@
         });
         return status;
     }    
+
+    setInterval(function(){
+        $('#monitor').attr('src', $('#monitor').attr('src'));
+        return false;
+    }, 1/5 * 1000);
+    
 </script>
 
 </body>
