@@ -4,6 +4,7 @@
 #DESC:  A python script for running a cherrpi API as a serial passthrough
 #COPY:  Copyright 2018, All Rights Reserved, Ryan McCartney
 
+from collections import deque
 import threading
 import cherrypy
 import serial
@@ -12,6 +13,7 @@ import os
 
 SerialPort = 'COM5' #'/dev/ttyACM0'
 Baudrate = 115200
+SerialMonitorLines = 15
 
 #define threading wrapper
 def threaded(fn):
@@ -26,6 +28,7 @@ try:
     class API(object):
 
         connected = False
+        serialMonitorData = ["-,-"]*SerialMonitorLines
 
         @cherrypy.expose
         def index(self):
@@ -48,11 +51,9 @@ try:
             log = open("http_api/public/receiveLog.csv","w")
             log.write("Date and Time,Farmbot Response\n")
             log.close()
-
-            #Clear Webpage Serial Monitor
-            log = open("http_api/public/serialMonitor.txt","w")
-            log.write("Timestamp,Data\n")
-            log.close()
+            
+            #Clear serial monitor
+            self.serialMonitorData = ["-,-"]*SerialMonitorLines
 
             #Return Message
             status = currentDateTime + " - INFO: Transmit and Receive Logs have been cleared."
@@ -91,11 +92,9 @@ try:
         @threaded
         def receive(self):
             
-            line = 0
-            log = open("http_api/public/serialMonitor.txt","w")
-            log.write("Timestamp,Data\n")
-            log.close()
-        
+            #Initialise array to store data serial monitor data
+            self.serialMonitorData = ["-,-"]*SerialMonitorLines
+
             while self.connected == True:
                 
                 #Get Current Date and Time for Logging
@@ -114,9 +113,12 @@ try:
                         with open ("http_api/public/receiveLog.csv", "a+") as log:
                             log.write(logLine+"\n")
                         
-                        with open ("http_api/public/serialMonitor.txt", "a+") as log:
-                            log.write(logLine+"\n")
-                            line = line + 1
+                        #Add received data to serial monitor array
+                        self.serialMonitorData = deque(self.serialMonitorData)
+                        self.serialMonitorData.append(logLine)        
+                        self.serialMonitorData.rotate(1)
+                        self.serialMonitorData.rotate(-1)
+                        self.serialMonitorData = self.serialMonitorData.popleft()
 
                         print(logLine)
                 except:
@@ -124,6 +126,20 @@ try:
                     currentDateTime = time.strftime("%d/%m/%Y %H:%M:%S")
                     status = currentDateTime + " - ERROR: Cannot read serial line."
                     print(status)
+
+        @cherrypy.expose
+        def serialMonitor(self):
+
+            table = "<table border='1' width='100%' style='text-align:left; border-collapse: collapse;'><tr><th style='border: 1px solid #dddddd; padding: 6px;' >Timestamp</th><th style='border: 1px solid #dddddd; padding: 6px;'>Serial Data</th></tr>"
+
+            for row in self.serialMonitorData:
+
+                table += "<tr><td style='border: 1px solid #dddddd; padding: 6px;' width='30%'>"
+                table += row.replace(",", "</td><td style='border: 1px solid #dddddd; padding: 6px;' width = 70%>")
+                table += "</tr></td>"
+        
+            table +="</table>"
+            return table
 
         @cherrypy.expose
         def connect(self):

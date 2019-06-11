@@ -10,7 +10,7 @@
         
 <body>
 
-    <img class="center" src="public/logo.png" width="200">
+    <img class="center" src="public/logo.png" width="150">
 
     <h1>Farmbot API</h1>
     
@@ -29,7 +29,8 @@
 
     <h2>Serial Monitor</h2>
 
-    <p><iframe id="monitor" src="public/serialMonitor.txt" frameborder="1" height="300" width=100%"></iframe></p>
+    <div id="serialMonitor"></div>
+
     <h2>Logs</h2>
 
         <form method="get" action="public/transmitLog.csv">
@@ -39,6 +40,8 @@
         <form method="get" action="public/receiveLog.csv">
             <button class="button" type="submit">Receive Log</button>
         </form>
+    
+        <p></p>
 
 <script src="public/jquery.min.js"></script>
 <script>
@@ -69,8 +72,19 @@
     }    
 
     setInterval(function(){
-        $('#monitor').attr('src', $('#monitor').attr('src'));
-        return false;
+
+        $.ajax({
+            type: "GET",
+            url: "serialMonitor",
+            datatype: "text",
+            success: function(table) {
+                
+                console.log(table)
+                //Print Status			
+                serialMonitor = document.getElementById('serialMonitor');
+                serialMonitor.innerHTML = table;
+            }
+        });
     }, 1/5 * 1000);
     
 </script>
