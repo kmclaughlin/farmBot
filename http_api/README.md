@@ -9,7 +9,7 @@ Simple API with web interface using AJAX and direct HTTP commands to allow remot
 
 ##Installation and Run
 
-1. `cd /home/pi/Desktop/
+1. `cd /home/pi/Desktop/`
 2. `git clone https://github.com/makerspacequb/farmBot`
 3. `cd ~/Desktop/farmBot/http_api`
 4. `sudo chmod +x startServer.sh`
