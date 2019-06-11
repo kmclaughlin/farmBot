@@ -31,17 +31,13 @@ void enableMotors(bool value) {
 }
 
 bool interruptBusy = false;
-unsigned long lastInterruptTime = micros();
 void interrupt(void){
   if(!interruptBusy){
     interruptBusy = true;
-    unsigned long currentMicros = micros();
-    unsigned long interruptTime = currentMicros - lastInterruptTime;
-    lastInterruptTime = currentMicros;
     //handle motor movement by interrupt
     //step motors
     for (int i = 0; i < NUM_OF_MOTORS; i++){
-      motors[i]->step(interruptTime);
+      motors[i]->step(INTERRUPT_TIME);
     }
     //process encoders
     for (int i = 0; i < NUM_OF_ENCODERS; i++){
