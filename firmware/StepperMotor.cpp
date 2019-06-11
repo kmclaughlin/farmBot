@@ -104,59 +104,53 @@ void StepperMotor::singleMotorStep(unsigned long elapsedMicros){
       if(mPulseDuration < mStepRunTime){
         mStepRunTime = 0;
         encoderControlledSteps();
+        stepDelay = false;
       }
     }
   }
 }
 
 void StepperMotor::dualMotorStep(unsigned long elapsedMicros){
-  //control individual motor speed to keep axis aligned
-  mStepRunTime += elapsedMicros;
-  mStepRunTimeMotor2 += elapsedMicros;
-  
-
-  //long encoderDifference = encoder->getPosition() - encoder2->getPosition();
-  //pulseDurationDual1 = mPulseDuration;// + (encoderDifference * DUAL_MOTOR_CORRECTION);
-  //pulseDurationDual2 = mPulseDuration;// - (encoderDifference * DUAL_MOTOR_CORRECTION);
-    
-  if(pulseDurationDual1 < mStepRunTime){
-    // set pulse duration for each motor dependant on how far in front or behind it is
-    //slow down the one further ahead, ie increase pulse duration
-    // only need to update each step
-    if(stepping) {
-      long encoderDifference = abs(encoder->getPosition()) - abs(encoder2->getPosition());
-      pulseDurationDual1 = mPulseDuration + (encoderDifference * DUAL_MOTOR_CORRECTION);
-      pulseDurationDual2 = mPulseDuration - (encoderDifference * DUAL_MOTOR_CORRECTION);
+  if (mSteps > 0) {
+    //control individual motor speed to keep axis aligned
+    mStepRunTime += elapsedMicros;
+    mStepRunTimeMotor2 += elapsedMicros;
+     
+    if(!stepDelay) {
+      digitalWrite(mStepPin, HIGH);
+      // digital write is slow enough to not need a delay.
+      // digital write will take about 6us
+      digitalWrite(mStepPin, LOW);
+      mSteps--;
+      stepDelay = true;
+    }
+    else {
+      if(mPulseDuration < mStepRunTime){
+        mStepRunTime = 0;
+        encoderControlledSteps();
+        stepDelay = false;
+        
+        // set pulse duration for each motor dependant on how far in front or behind it is
+        //slow down the one further ahead, ie increase pulse duration
+        // only need to update each step
+        long encoderDifference = abs(encoder->getPosition()) - abs(encoder2->getPosition());
+        pulseDurationDual1 = mPulseDuration + (encoderDifference * DUAL_MOTOR_CORRECTION);
+        pulseDurationDual2 = mPulseDuration - (encoderDifference * DUAL_MOTOR_CORRECTION);
+      }
     }
     
-    mStepRunTime = 0;
-    encoderControlledSteps();
-    //TODO replace these digital writes with port manipulation
-    if (mSteps > 0) {
-      if(!stepping) {
-        digitalWrite(mStepPin, HIGH);
-        stepping = true;
-      }
-      else {
-        digitalWrite(mStepPin, LOW);
-        stepping = false;
-        //reduce steps only on motor 1
-        mSteps--;
-      }
+    if(!stepDelayMotor2) {
+      digitalWrite(mStepPin2, HIGH);
+      // digital write is slow enough to not need a delay.
+      // digital write will take about 6us
+      digitalWrite(mStepPin2, LOW);
+      stepDelayMotor2 = true;
     }
-  }
-  
-  if(pulseDurationDual2 < mStepRunTimeMotor2){
-    mStepRunTimeMotor2 = 0;
-    //TODO replace these digital writes with port manipulation
-    if (mSteps > 0) {
-      if(!steppingMotor2) {
-        digitalWrite(mStepPin2, HIGH);
-        steppingMotor2 = true;
-      }
-      else {
-        digitalWrite(mStepPin2, LOW);
-        steppingMotor2 = false;
+    else {
+      if(pulseDurationDual2 < mStepRunTimeMotor2){
+        mStepRunTimeMotor2 = 0;
+        encoderControlledSteps();
+        stepDelayMotor2 = false;
       }
     }
   }
