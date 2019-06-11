@@ -7,7 +7,7 @@ Simple API with web interface using AJAX and direct HTTP commands to allow remot
 * `pip3 install cherrypy`
 * `pip3 install pyserial`
 
-##Installation and Run
+## Installation and Run
 
 1. `cd /home/pi/Desktop/`
 2. `git clone https://github.com/makerspacequb/farmBot`
