@@ -91,23 +91,19 @@ void StepperMotor::singleMotorStep(unsigned long elapsedMicros){
   //while steps remain, cycle between setting step pins high for fixed delay time and low for fixed delay time
   // to move motor at desired speed (defined by delay time)
   mStepRunTime += elapsedMicros;
-  if(mPulseDuration < mStepRunTime){
-    mStepRunTime = 0;
-    encoderControlledSteps();
-    //TODO replace these digital writes with port manipulation
-    if (mSteps > 0) {
-      if(!stepping) {
-        digitalWrite(mStepPin, HIGH);
-        if (dualMotor)
-            digitalWrite(mStepPin2, HIGH);
-        stepping = true;
-      }
-      else {
-        digitalWrite(mStepPin, LOW);
-        if (dualMotor)
-            digitalWrite(mStepPin2, LOW);
-        stepping = false;
-        mSteps--;
+  if (mSteps > 0) {
+    if(!stepDelay) {
+      digitalWrite(mStepPin, HIGH);
+      // digital write is slow enough to not need a delay.
+      // digital write will take about 6us
+      digitalWrite(mStepPin, LOW);
+      mSteps--;
+      stepDelay = true;
+    }
+    else {
+      if(mPulseDuration < mStepRunTime){
+        mStepRunTime = 0;
+        encoderControlledSteps();
       }
     }
   }

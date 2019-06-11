@@ -52,10 +52,11 @@ void interrupt(void){
 }
 
 void setup() {
-  //set up lighting
+  //set up peripherals
   pinMode(LIGHTING_PIN, OUTPUT);
   pinMode(WATER_PIN, OUTPUT);
   pinMode(VACUUM_PIN, OUTPUT);
+  // start with all off
   digitalWrite(LIGHTING_PIN, LOW);
   digitalWrite(WATER_PIN, LOW);
   digitalWrite(VACUUM_PIN, LOW);

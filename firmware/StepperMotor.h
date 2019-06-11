@@ -34,6 +34,7 @@ class StepperMotor {
     bool dualMotor = false;
     bool mOpposing;
     bool stepping = false;
+    bool stepDelay = false;
     bool steppingMotor2 = false;
     bool enabled = false;
     bool direction;
