@@ -15,4 +15,9 @@
 
 #define INST_ARRAY_LEN          20
 
+#define MOTOR_ENABLE_DELAY 100
+#define ENCODER_PRECISION 2
+#define DUAL_MOTOR_CORRECTION 10
+#define ENC_STEP_CONV_FACTOR 1.76
+
 #endif
