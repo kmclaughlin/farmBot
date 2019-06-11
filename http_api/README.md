@@ -28,6 +28,6 @@ Simple API with web interface using AJAX and direct HTTP commands to allow remot
 * Acquire Receive log `http://PI_IP_ADDRESS:8080/public/receiveLog.csv`
 * Acquire Transmit log `http://PI_IP_ADDRESS:8080/public/transmitLog.csv`
 * Connect or Reconnect Serial `http://PI_IP_ADDRESS:8080/connect`
-* Get latest serial monitor data in table form `http://PI_IP_ADDRESS:8080/serialMonitor
+* Get latest serial monitor data in table form `http://PI_IP_ADDRESS:8080/serialMonitor`
 
 Note: The serial port is automatically connected when using the `send?command=ARDUINO_COMMAND_HERE` function. The connect command is best used to manage disconnect errors. 
