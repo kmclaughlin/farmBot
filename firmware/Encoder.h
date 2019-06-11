@@ -5,8 +5,8 @@
 
 class Encoder{
   public:
-    Encoder(int channelA, int channelB, uint8_t _aByte, uint8_t _bByte, volatile uint8_t *_aPort, volatile uint8_t *_bPort,
-            bool invert);
+    Encoder(uint8_t _aByte, uint8_t _bByte, volatile uint8_t *_aPort, 
+            volatile uint8_t *_bPort, bool invert);
     void process();
     long getPosition() {return position * inverted;};
     void setPosition(long newPosition) { position = newPosition; };
@@ -16,8 +16,6 @@ class Encoder{
     void readChannels();
     void shiftChannels();
     // pin settings
-    int pinChannelA;
-    int pinChannelB;
   
     // channels
     bool prvValChannelA;

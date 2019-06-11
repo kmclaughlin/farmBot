@@ -1,17 +1,13 @@
 #include "Encoder.h"
 
-Encoder::Encoder(int channelA, int channelB, uint8_t _aByte, uint8_t _bByte, 
-                 volatile uint8_t *_aPort, volatile uint8_t *_bPort, bool invert) {
-
+Encoder::Encoder(uint8_t _aByte, uint8_t _bByte, volatile uint8_t *_aPort, 
+                  volatile uint8_t *_bPort, bool invert) {
   position = 0;
 
   curValChannelA = false;
   curValChannelB = false;
   prvValChannelA = false;
   prvValChannelB = false;
-  
-  pinChannelA = channelA;
-  pinChannelB = channelB;
 
   aByte = _aByte;
   bByte = _bByte;

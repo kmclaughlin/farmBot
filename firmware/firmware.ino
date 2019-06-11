@@ -61,14 +61,10 @@ void setup() {
   Serial.begin(9600);
   
   //initialise encoders
-  encoders[0] = new Encoder(X_ENCDR_A, X_ENCDR_B, ENC_X_A_BYTE, ENC_X_B_BYTE, 
-                            &ENC_X_A_PORT, &ENC_X_B_PORT, false);
-  encoders[1] = new Encoder(X2_ENCDR_A, X2_ENCDR_B, ENC_X2_A_BYTE, ENC_X2_B_BYTE, 
-                            &ENC_X2_A_PORT, &ENC_X2_B_PORT,  false);
-  encoders[2] = new Encoder(Y_ENCDR_A, Y_ENCDR_B, ENC_Y_A_BYTE, ENC_Y_B_BYTE, 
-                            &ENC_Y_A_PORT, &ENC_Y_B_PORT, false);
-  encoders[3] = new Encoder(Z_ENCDR_A, Z_ENCDR_B, ENC_Z_A_BYTE, ENC_Z_B_BYTE, 
-                            &ENC_Z_A_PORT, &ENC_Z_B_PORT, false);
+  encoders[0] = new Encoder(ENC_X_A_BYTE, ENC_X_B_BYTE, &ENC_X_A_PORT, &ENC_X_B_PORT, false);
+  encoders[1] = new Encoder(ENC_X2_A_BYTE, ENC_X2_B_BYTE, &ENC_X2_A_PORT, &ENC_X2_B_PORT, false);
+  encoders[2] = new Encoder(ENC_Y_A_BYTE, ENC_Y_B_BYTE, &ENC_Y_A_PORT, &ENC_Y_B_PORT, false);
+  encoders[3] = new Encoder(ENC_Z_A_BYTE, ENC_Z_B_BYTE, &ENC_Z_A_PORT, &ENC_Z_B_PORT, false);
                             
   //initialise Motors
   motors[0] = new StepperMotor(X_STEP_PIN, X_DIR_PIN, X_ENABLE_PIN, X2_STEP_PIN, X2_DIR_PIN, X2_ENABLE_PIN, true, MAX_STEP_PULSE);
