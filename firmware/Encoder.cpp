@@ -1,4 +1,3 @@
-
 #include "Encoder.h"
 
 Encoder::Encoder(int channelA, int channelB, uint8_t _aByte, uint8_t _bByte, 
@@ -46,7 +45,6 @@ rotation ----------------------------------------------------->
 */
 void Encoder::process() {
     shiftChannels();
-    //setChannels(channelA, channelB);
     readChannels();
 
     // Detect edges on the A channel when the B channel is high
@@ -60,11 +58,6 @@ void Encoder::readChannels() {
   //using direct port manipulation instead of digital read as it is much faster
   curValChannelA = *aPort & aByte;
   curValChannelB = *bPort & bByte;
-}
-
-void Encoder::setChannels(bool channelA, bool channelB){
-  curValChannelA = channelA;
-  curValChannelB = channelB;
 }
 
 void Encoder::shiftChannels(){

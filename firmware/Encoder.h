@@ -1,7 +1,6 @@
 #ifndef ENCODER_H
 #define ENCODER_H
 
-#include "pins.h"
 #include "Arduino.h"
 
 class Encoder{
@@ -10,13 +9,12 @@ class Encoder{
             bool invert);
     void process();
     long getPosition() {return position * inverted;};
-    void setPosition(long newPosition) {position = newPosition;};
-    void setChannels(bool channelA, bool channelB);
-    void readChannels();
-    void shiftChannels();
+    void setPosition(long newPosition) { position = newPosition; };
     int  movementCheck() { return abs(prvMovementCheckPosition - position);};
     void resetMovementCheck() { prvMovementCheckPosition = position;};
   private:
+    void readChannels();
+    void shiftChannels();
     // pin settings
     int pinChannelA;
     int pinChannelB;
@@ -32,7 +30,7 @@ class Encoder{
     volatile uint8_t *aPort;
     volatile uint8_t *bPort;
     
-    long position;
+    volatile long position;
     int inverted;
     int prvMovementCheckPosition;
 };
