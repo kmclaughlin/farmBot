@@ -4,15 +4,22 @@ Simple API with web interface using AJAX and direct HTTP commands to allow remot
 
 ## Requirements
 
-* `pip install cherrypy`
-* `pip install pyserial`
-* `pip install glob`
+* `pip3 install cherrypy`
+* `pip3 install pyserial`
+
+##Installation and Run
+
+1. `cd /home/pi/Desktop/
+2. `git clone https://github.com/makerspacequb/farmBot`
+3. `cd ~/Desktop/farmBot/http_api`
+4. `sudo chmod +x startServer.sh`
+5. `./startServer.sh`
 
 ## Usage
 
 1. Clone Repository to any directory on your Raspberry Pi.
 2. sudo python directories/roboticArm/http_api/main.py
-3. Navigate to `http://piIPaddress:8080`
+3. Navigate to `http://piIPaddress:8080` or `http://hostname.local:8080`
 
 ## Commands to use with Requests Libary
 
