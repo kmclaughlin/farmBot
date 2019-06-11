@@ -17,14 +17,14 @@ void setup() {
 
 // the loop function runs over and over again forever
 void loop() {
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-  delay(500);                       // wait for a second
-  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
-  delay(500);                       // wait for a second
+  digitalWrite(LED_BUILTIN, HIGH);  
+  delay(500);                      
+  digitalWrite(LED_BUILTIN, LOW);    
+  delay(500);                   
   Serial.print("INFO: ");
   Serial.print(loops);
   Serial.println(" loops have passed.");
-
+   
   if(stringComplete == true){
     Serial.print("Data received is '");
     Serial.print(inputString);

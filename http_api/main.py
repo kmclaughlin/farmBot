@@ -53,7 +53,7 @@ try:
             log = open("http_api/public/serialMonitor.txt","w")
             log.write("Timestamp,Data\n")
             log.close()
-            
+
             #Return Message
             status = currentDateTime + " - INFO: Transmit and Receive Logs have been cleared."
             print(status)
