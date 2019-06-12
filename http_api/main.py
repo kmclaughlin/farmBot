@@ -33,6 +33,9 @@ try:
         @cherrypy.expose
         def index(self):
             
+            #On index try to connect to serial
+            self.connect()
+
             with open ("http_api/index.html", "r") as webPage:
                 contents=webPage.readlines()
             return contents
@@ -112,13 +115,10 @@ try:
                         #Add response to receive log
                         with open ("http_api/public/receiveLog.csv", "a+") as log:
                             log.write(logLine+"\n")
-                        
+                                                
                         #Add received data to serial monitor array
-                        self.serialMonitorData = deque(self.serialMonitorData)
+                        self.serialMonitorData.pop(0)
                         self.serialMonitorData.append(logLine)        
-                        self.serialMonitorData.rotate(1)
-                        self.serialMonitorData.rotate(-1)
-                        self.serialMonitorData = self.serialMonitorData.popleft()
 
                         print(logLine)
                 except:
@@ -129,7 +129,8 @@ try:
 
         @cherrypy.expose
         def serialMonitor(self):
-
+            
+            style = "<style><link rel='stylesheet' type='text/css' href='public/style.css'></style>"
             table = "<table border='1' width='100%' style='text-align:left; border-collapse: collapse;'><tr><th style='border: 1px solid #dddddd; padding: 6px;' >Timestamp</th><th style='border: 1px solid #dddddd; padding: 6px;'>Serial Data</th></tr>"
 
             for row in self.serialMonitorData:

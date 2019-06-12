@@ -6,8 +6,7 @@
 
 import threading
 import time
-import requests 
-import pygame
+import requests
 from requests import Session
 
 #define threading wrapper
@@ -44,7 +43,7 @@ class Farmbot:
         print(logEntry)
     
     #Send and Receive Messages with implemented logging
-    def transmitCommand(self, command):
+    def sendCommand(self, command):
 
         #Start Timing
         start = time.time()
@@ -68,18 +67,18 @@ class Farmbot:
             self.connected = False
 
     def lightOn(self):
-        self.transmitCommand("l1")
+        self.sendCommand("l1")
         self.log("INFO: Lights turned on")
 
     def lightOff(self):
-        self.transmitCommand("l0")
+        self.sendCommand("l0")
         self.log("INFO: Lights turned off")
 
     def waterOn(self):
-        self.transmitCommand("w1")
+        self.sendCommand("w1")
         self.log("INFO: Water turned on")
     
     def waterOff(self):
-        self.transmitCommand("w0")
+        self.sendCommand("w0")
         self.log("INFO: Water turned off")
     
