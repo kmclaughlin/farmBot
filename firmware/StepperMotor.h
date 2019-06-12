@@ -27,6 +27,7 @@ class StepperMotor {
     void singleMotorStep(unsigned long elapsedMicros);
     void dualMotorStep(unsigned long elapsedMicros);
     void encoderControlledSteps();
+    void StepperMotor::updateAcceleration();
     
     int stepPin, dirPin, enablePin;
     int stepPin2, dirPin2, enablePin2;

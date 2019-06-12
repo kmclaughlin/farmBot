@@ -118,6 +118,7 @@ void StepperMotor::singleMotorStep(unsigned long elapsedMicros){
         stepRunTime = 0;
         encoderControlledSteps();
         stepDelay = false;
+        updateAcceleration();
       }
     }
   }
@@ -164,6 +165,7 @@ void StepperMotor::dualMotorStep(unsigned long elapsedMicros){
         long encoderDifference = abs(encoder->getPosition()) - abs(encoder2->getPosition());
         stepDelayDual1 = currentStepDelayDuration + (encoderDifference * DUAL_MOTOR_CORRECTION);
         stepDelayDual2 = currentStepDelayDuration - (encoderDifference * DUAL_MOTOR_CORRECTION);
+        updateAcceleration();
       }
     }
   }
@@ -196,13 +198,32 @@ void StepperMotor::setDirection(bool dir){
   }
 }
 
+void StepperMotor::updateAcceleration(){
+  //update acceleration
+  if(steps * accelRate < maxStepDelayDuration - currentStepDelayDuration){
+    //deceleration
+    if(currentStepDelayDuration < maxStepDelayDuration){
+      currentStepDelayDuration += accelRate;
+    }
+  }else if(currentStepDelayDuration > stepDelayDuration){
+    //acceleration  
+    currentStepDelayDuration -= accelRate;
+  }
+  
+  //constrain step delay
+  if(currentStepDelayDuration < stepDelayDuration) 
+    currentStepDelayDuration = stepDelayDuration;
+  else if (currentStepDelayDuration > maxStepDelayDuration)
+    currentStepDelayDuration = maxStepDelayDuration;
+}
+
 void StepperMotor::setSpeed(int speed){ 
   this->speed = speed;
-  stepDelayDuration = (long)1000000 / (long) speed;
+  stepDelayDuration = (long)1000000 / ((long) speed * (long) stepsPerMM);
 }
 
 void StepperMotor::setMinSpeed(int minSpeed){ 
   this->minSpeed = minSpeed;
-  maxStepDelayDuration = (long)1000000 / (long)minSpeed;
+  maxStepDelayDuration = (long)1000000 / ((long) minSpeed * (long) stepsPerMM);
 }
 
