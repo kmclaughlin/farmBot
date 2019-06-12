@@ -54,7 +54,7 @@ class Farmbot:
 
         #combine with host address
         message = self.baseURL + "send?command=" + command
-        print(message)
+    
         try:
             response = requests.post(message,timeout=1)
             status = response.content.decode("utf-8").split("\n")
