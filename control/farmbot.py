@@ -25,8 +25,12 @@ class Farmbot:
     def __init__(self,ipAddress):
 
         self.logging = True
-        self.baseURL = "http//"+ipAddress+":8080"
-        self.connected = False
+        self.baseURL = "http://"+ipAddress+":8080/"
+        self.connected = True
+        self.error = False
+
+        #Start capturing status packets
+        self.getStatus()
 
     #Logging Function
     def log(self, entry):
@@ -50,7 +54,7 @@ class Farmbot:
 
         #combine with host address
         message = self.baseURL + "send?command=" + command
-
+        print(message)
         try:
             response = requests.post(message,timeout=1)
             status = response.content.decode("utf-8").split("\n")
@@ -63,8 +67,26 @@ class Farmbot:
             self.connected = True
 
         except:
-            self.log("ERROR = Could not access wheelchair API")
+            self.log("ERROR = Could not access API")
             self.connected = False
+
+    @threaded
+    def getStatus(self):
+        
+        delay = 0.25 #Seconds
+        while self.connected:
+
+            try:
+                message = self.baseURL + "getLine"
+                response = requests.post(message,timeout=1)
+            
+                status = response.content.decode("utf-8").split("\n")
+                self.log("INFO: " + status)
+            except:
+                self.log("ERROR: No status response. No Connection.")
+                self.connected = False
+        
+            time.sleep(delay)
 
     def lightOn(self):
         self.sendCommand("l1")
@@ -80,5 +102,13 @@ class Farmbot:
     
     def waterOff(self):
         self.sendCommand("w0")
+        self.log("INFO: Water turned off")
+
+    def vacuumOn(self):
+        self.sendCommand("v1")
+        self.log("INFO: Water turned on")
+    
+    def vacuumOff(self):
+        self.sendCommand("v0")
         self.log("INFO: Water turned off")
     
