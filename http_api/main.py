@@ -11,7 +11,7 @@ import serial
 import time
 import os
 
-SerialPort = 'COM5' #'/dev/ttyACM0'
+SerialPort = '/dev/ttyACM0'
 Baudrate = 115200
 SerialMonitorLines = 15
 
@@ -130,14 +130,13 @@ try:
         @cherrypy.expose
         def serialMonitor(self):
             
-            style = "<style><link rel='stylesheet' type='text/css' href='public/style.css'></style>"
-            table = "<table border='1' width='100%' style='text-align:left; border-collapse: collapse;'><tr><th style='border: 1px solid #dddddd; padding: 6px;' >Timestamp</th><th style='border: 1px solid #dddddd; padding: 6px;'>Serial Data</th></tr>"
+            table = "<table><tr><th>Timestamp</th><th>Serial Data</th></tr>"
 
             for row in self.serialMonitorData:
 
-                table += "<tr><td style='border: 1px solid #dddddd; padding: 6px;' width='30%'>"
-                table += row.replace(",", "</td><td style='border: 1px solid #dddddd; padding: 6px;' width = 70%>")
-                table += "</tr></td>"
+                table += "<tr><td width='30%'>"
+                table += row.replace(",", "</td><td width='70%'>")
+                table += "</td></tr>"
         
             table +="</table>"
             return table
