@@ -58,9 +58,9 @@ void setup() {
                             
   //initialise Motors
   motors[0] = new StepperMotor(X_STEP_PIN, X_DIR_PIN, X_ENABLE_PIN, X2_STEP_PIN, X2_DIR_PIN, 
-                  X2_ENABLE_PIN, true, X_SPEED, X_MIN_SPEED, X_STEPS_PER_MM);
-  motors[1] = new StepperMotor(Y_STEP_PIN, Y_DIR_PIN, Y_ENABLE_PIN, Y_SPEED, Y_MIN_SPEED, Y_STEPS_PER_MM);
-  motors[2] = new StepperMotor(Z_STEP_PIN, Z_DIR_PIN, Z_ENABLE_PIN, Z_SPEED, Z_MIN_SPEED, Z_STEPS_PER_MM);
+                  X2_ENABLE_PIN, true, X_SPEED, X_MIN_SPEED, X_STEPS_PER_MM, X_ACCEL_RATE);
+  motors[1] = new StepperMotor(Y_STEP_PIN, Y_DIR_PIN, Y_ENABLE_PIN, Y_SPEED, Y_MIN_SPEED, Y_STEPS_PER_MM, Y_ACCEL_RATE);
+  motors[2] = new StepperMotor(Z_STEP_PIN, Z_DIR_PIN, Z_ENABLE_PIN, Z_SPEED, Z_MIN_SPEED, Z_STEPS_PER_MM, Z_ACCEL_RATE);
 
   motors[0]->attachEncoder(encoders[0], encoders[1]);
   motors[1]->attachEncoder(encoders[2]);

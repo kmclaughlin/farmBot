@@ -5,14 +5,17 @@
 #define NUM_OF_ENCODERS         4
 // motor speeds in mm/s
 #define X_MIN_SPEED             20
-#define X_SPEED                 20
+#define X_SPEED                 1
 #define X_STEPS_PER_MM          100
+#define X_ACCEL_RATE            10
 #define Y_MIN_SPEED             20
-#define Y_SPEED                 20
+#define Y_SPEED                 1
 #define Y_STEPS_PER_MM          100
+#define Y_ACCEL_RATE            10
 #define Z_MIN_SPEED             20
-#define Z_SPEED                 20
+#define Z_SPEED                 1
 #define Z_STEPS_PER_MM          100
+#define Z_ACCEL_RATE            10
 
 #define MIN_STEP_PULSE          100
 #define INTERRUPT_TIME          50

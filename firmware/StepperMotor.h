@@ -6,9 +6,9 @@
 
 class StepperMotor {
   public:
-    StepperMotor(int stepPin, int dirPin, int enablePin, unsigned long pulseDuration);
+    StepperMotor(int stepPin, int dirPin, int enablePin, int speed, int minSpeed, unsigned int stepsPerMM, int accelRate);
     StepperMotor(int stepPin1, int dirPin1, int enablePin1, int stepPin2, int dirPin2, int enablePin2,
-        boolean opposing, unsigned long pulseDuration);
+        boolean opposing, int speed, int minSpeed, unsigned int stepsPerMM, int accelRate);
     void attachEncoder(Encoder *encdr1, Encoder *encdr2 = NULL) {encoder = encdr1; encoder2 = encdr2;};
     void moveEncoderSteps(int steps);
     void setSteps(int steps, bool dir);
@@ -17,8 +17,9 @@ class StepperMotor {
     Encoder* getEncoder() { return encoder;}; // returns primary encoder
     void step(unsigned long elapsedMicros);
     void enable(bool value);
-    void setPulseDuration(unsigned long pulseDuration){ this->pulseDuration = pulseDuration; };
     long getTargetEncoderValue() {return targetEncoderValue; };
+    void setSpeed(int speed);
+    void setMinSpeed(int minSpeed);
     
   private:
   void commonInitialise();
@@ -29,10 +30,12 @@ class StepperMotor {
     
     int stepPin, dirPin, enablePin;
     int stepPin2, dirPin2, enablePin2;
-    int steps;
+    int speed, minSpeed, accelRate;
+    unsigned int stepsPerMM;
+    volatile int steps;
+    int currentStepDelayDuration, maxStepDelayDuration, stepDelayDuration, stepDelayDual1, stepDelayDual2;
     bool dualMotor, opposing, stepDelay, stepDelayMotor2, enabled;
     bool direction;
-    unsigned long pulseDuration, pulseDurationDual1, pulseDurationDual2;
     unsigned long stepRunTime, stepRunTimeMotor2;
     Encoder *encoder, *encoder2;
     long targetEncoderValue;

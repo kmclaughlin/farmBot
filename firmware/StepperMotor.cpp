@@ -1,6 +1,6 @@
 #include "StepperMotor.h"
 
-StepperMotor::StepperMotor(int stepPin, int dirPin, int enablePin, unsigned long pulseDuration){
+StepperMotor::StepperMotor(int stepPin, int dirPin, int enablePin, int speed, int minSpeed, unsigned int stepsPerMM, int accelRate){
   this->stepPin = stepPin; 
   this->dirPin = dirPin;
   this->enablePin = enablePin;
@@ -9,14 +9,18 @@ StepperMotor::StepperMotor(int stepPin, int dirPin, int enablePin, unsigned long
   pinMode(dirPin, OUTPUT);
   pinMode(enablePin, OUTPUT);
 
+  setSpeed(speed);
+  setMinSpeed(minSpeed);
+  
   dualMotor = false;
   opposing = false;
-  this->pulseDuration = pulseDuration;
+  this->stepsPerMM = stepsPerMM;
+  this->accelRate = accelRate;
   commonInitialise();
 }
 
 StepperMotor::StepperMotor(int stepPin1, int dirPin1, int enablePin1, int stepPin2, int dirPin2, int enablePin2,
-        boolean opposing, unsigned long pulseDuration){
+        boolean opposing, int speed, int minSpeed, unsigned int stepsPerMM, int accelRate){
   this->stepPin = stepPin1; 
   this->dirPin = dirPin1;
   this->enablePin = enablePin1;
@@ -33,9 +37,13 @@ StepperMotor::StepperMotor(int stepPin1, int dirPin1, int enablePin1, int stepPi
   pinMode(dirPin2, OUTPUT);
   pinMode(enablePin2, OUTPUT);
 
+  setSpeed(speed);
+  setMinSpeed(minSpeed);
+
   dualMotor = true;
   this->opposing = opposing;
-  this->pulseDuration = pulseDuration;
+  this->stepsPerMM = stepsPerMM;
+  this->accelRate = accelRate;
   commonInitialise();
 }
 
@@ -44,8 +52,8 @@ void StepperMotor::commonInitialise(){
   enable(false);
   setDirection(true);
 
-  pulseDurationDual1 = pulseDuration;
-  pulseDurationDual2 = pulseDuration;
+  stepDelayDual1 = currentStepDelayDuration;
+  stepDelayDual2 = currentStepDelayDuration;
 
   stepRunTime = 0;
   stepRunTimeMotor2 = 0;
@@ -106,7 +114,7 @@ void StepperMotor::singleMotorStep(unsigned long elapsedMicros){
       stepDelay = true;
     }
     else {
-      if(pulseDuration < stepRunTime){
+      if(currentStepDelayDuration < stepRunTime){
         stepRunTime = 0;
         encoderControlledSteps();
         stepDelay = false;
@@ -130,17 +138,10 @@ void StepperMotor::dualMotorStep(unsigned long elapsedMicros){
       stepDelay = true;
     }
     else {
-      if(pulseDuration < stepRunTime){
+      if(stepDelayDual1 < stepRunTime){
         stepRunTime = 0;
         encoderControlledSteps();
         stepDelay = false;
-        
-        // set pulse duration for each motor dependant on how far in front or behind it is
-        //slow down the one further ahead, ie increase pulse duration
-        // only need to update each step
-        long encoderDifference = abs(encoder->getPosition()) - abs(encoder2->getPosition());
-        pulseDurationDual1 = pulseDuration + (encoderDifference * DUAL_MOTOR_CORRECTION);
-        pulseDurationDual2 = pulseDuration - (encoderDifference * DUAL_MOTOR_CORRECTION);
       }
     }
     
@@ -152,10 +153,17 @@ void StepperMotor::dualMotorStep(unsigned long elapsedMicros){
       stepDelayMotor2 = true;
     }
     else {
-      if(pulseDurationDual2 < stepRunTimeMotor2){
+      if(stepDelayDual2 < stepRunTimeMotor2){
         stepRunTimeMotor2 = 0;
         encoderControlledSteps();
         stepDelayMotor2 = false;
+        
+        // set pulse duration for each motor dependant on how far in front or behind it is
+        //slow down the one further ahead, ie increase pulse duration
+        // only need to update each step
+        long encoderDifference = abs(encoder->getPosition()) - abs(encoder2->getPosition());
+        stepDelayDual1 = currentStepDelayDuration + (encoderDifference * DUAL_MOTOR_CORRECTION);
+        stepDelayDual2 = currentStepDelayDuration - (encoderDifference * DUAL_MOTOR_CORRECTION);
       }
     }
   }
@@ -186,5 +194,15 @@ void StepperMotor::setDirection(bool dir){
     else 
       digitalWrite(dirPin2, dir);
   }
+}
+
+void StepperMotor::setSpeed(int speed){ 
+  this->speed = speed;
+  stepDelayDuration = (long)1000000 / (long) speed;
+}
+
+void StepperMotor::setMinSpeed(int minSpeed){ 
+  this->minSpeed = minSpeed;
+  maxStepDelayDuration = (long)1000000 / (long)minSpeed;
 }
 
