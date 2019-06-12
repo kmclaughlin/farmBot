@@ -10,8 +10,8 @@ Simple API with web interface using AJAX and direct HTTP commands to allow remot
 ## Installation and Run
 
 1. `cd /home/pi/Desktop/`
-2. `git clone https://github.com/makerspacequb/farmBot`
-3. `cd ~/Desktop/farmBot/http_api`
+2. `git clone https://github.com/makerspacequb/farmbot`
+3. `cd ~/Desktop/farmbot/http_api`
 4. `sudo chmod +x startServer.sh`
 5. `./startServer.sh`
 
@@ -29,5 +29,6 @@ Simple API with web interface using AJAX and direct HTTP commands to allow remot
 * Acquire Transmit log `http://PI_IP_ADDRESS:8080/public/transmitLog.csv`
 * Connect or Reconnect Serial `http://PI_IP_ADDRESS:8080/connect`
 * Get latest serial monitor data in table form `http://PI_IP_ADDRESS:8080/serialMonitor`
+* Get latest serial monitor line as string `http://PI_IP_ADDRESS:8080/getLine`
 
 Note: The serial port is automatically connected when using the `send?command=ARDUINO_COMMAND_HERE` function. The connect command is best used to manage disconnect errors. 

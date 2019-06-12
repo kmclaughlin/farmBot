@@ -4,7 +4,6 @@
 #DESC:  A python script for running a cherrpi API as a serial passthrough
 #COPY:  Copyright 2018, All Rights Reserved, Ryan McCartney
 
-from collections import deque
 import threading
 import cherrypy
 import serial
@@ -13,7 +12,7 @@ import os
 
 SerialPort = '/dev/ttyACM0'
 Baudrate = 115200
-SerialMonitorLines = 15
+SerialMonitorLines = 20
 
 #define threading wrapper
 def threaded(fn):
@@ -140,6 +139,12 @@ try:
         
             table +="</table>"
             return table
+
+        @cherrypy.expose
+        def getLine(self):
+
+            line = self.serialMonitorData[SerialMonitorLines-1]
+            return line
 
         @cherrypy.expose
         def connect(self):
