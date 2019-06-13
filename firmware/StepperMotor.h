@@ -15,7 +15,7 @@ class StepperMotor {
     bool isMoving() { return ((steps > 0) || encoderControlledStep);};
     bool isEnabled() { return enabled;};
     Encoder* getEncoder() { return encoder;}; // returns primary encoder
-    void step(unsigned long elapsedMicros);
+    void step(unsigned int elapsedMicros);
     void enable(bool value);
     long getTargetEncoderValue() {return targetEncoderValue; };
     void setSpeed(int speed);
@@ -24,20 +24,21 @@ class StepperMotor {
   private:
   void commonInitialise();
     void setDirection(bool dir);
-    void singleMotorStep(unsigned long elapsedMicros);
-    void dualMotorStep(unsigned long elapsedMicros);
+    void singleMotorStep(unsigned int elapsedMicros);
+    void dualMotorStep(unsigned int elapsedMicros);
     void encoderControlledSteps();
-    void StepperMotor::updateAcceleration();
+    void updateAcceleration(unsigned long elapsedMicros);
     
     int stepPin, dirPin, enablePin;
     int stepPin2, dirPin2, enablePin2;
-    int speed, minSpeed, accelRate;
+    int speed, minSpeed, accelRate, accTimer;
     unsigned int stepsPerMM;
     volatile int steps;
-    int currentStepDelayDuration, maxStepDelayDuration, stepDelayDuration, stepDelayDual1, stepDelayDual2;
+    volatile long currentStepDelayDuration;
+    long maxStepDelayDuration, stepDelayDuration, stepDelayDual1, stepDelayDual2;
     bool dualMotor, opposing, stepDelay, stepDelayMotor2, enabled;
     bool direction;
-    unsigned long stepRunTime, stepRunTimeMotor2;
+    unsigned int stepRunTime, stepRunTimeMotor2;
     Encoder *encoder, *encoder2;
     long targetEncoderValue;
     bool encoderControlledStep;

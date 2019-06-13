@@ -8,14 +8,13 @@ StepperMotor::StepperMotor(int stepPin, int dirPin, int enablePin, int speed, in
   pinMode(stepPin, OUTPUT);
   pinMode(dirPin, OUTPUT);
   pinMode(enablePin, OUTPUT);
-
-  setSpeed(speed);
-  setMinSpeed(minSpeed);
   
   dualMotor = false;
   opposing = false;
   this->stepsPerMM = stepsPerMM;
   this->accelRate = accelRate;
+  setSpeed(speed);
+  setMinSpeed(minSpeed);
   commonInitialise();
 }
 
@@ -37,13 +36,12 @@ StepperMotor::StepperMotor(int stepPin1, int dirPin1, int enablePin1, int stepPi
   pinMode(dirPin2, OUTPUT);
   pinMode(enablePin2, OUTPUT);
 
-  setSpeed(speed);
-  setMinSpeed(minSpeed);
-
   dualMotor = true;
   this->opposing = opposing;
   this->stepsPerMM = stepsPerMM;
   this->accelRate = accelRate;
+  setSpeed(speed);
+  setMinSpeed(minSpeed);
   commonInitialise();
 }
 
@@ -63,22 +61,26 @@ void StepperMotor::commonInitialise(){
   stepDelay = false;
   stepDelayMotor2 = false;
   steps = 0;
+  accTimer = 0;
 }
 
 void StepperMotor::setSteps(int steps, bool dir){
   encoderControlledStep = false;
   //set motor direction
   setDirection(dir);
-  this->steps = steps;
+  this->steps = abs(steps);
+  currentStepDelayDuration = maxStepDelayDuration;
 }
 
+//TODO doesn't allow for new instructions during movement
 void StepperMotor::moveEncoderSteps(int encoderSteps){
-  encoderControlledStep = true;
+  encoderControlledStep = abs(encoderSteps) > 0;
   targetEncoderValue = encoder->getPosition() + encoderSteps;
   // set motor direction
   setDirection(encoderSteps > 0);
   // encoder steps are not equal to motor steps. Approx 1 mstep to 1.76 estep 
-  steps = encoderSteps / ENC_STEP_CONV_FACTOR;
+  steps = abs(encoderSteps) / ENC_STEP_CONV_FACTOR;
+  currentStepDelayDuration = maxStepDelayDuration;
 }
 
 void StepperMotor::enable(bool enable){
@@ -93,14 +95,15 @@ void StepperMotor::enable(bool enable){
     steps = 0;
 }
 
-void StepperMotor::step(unsigned long elapsedMicros){
+void StepperMotor::step(unsigned int elapsedMicros){
   if (dualMotor)
     dualMotorStep(elapsedMicros);
   else
     singleMotorStep(elapsedMicros);
+  updateAcceleration(elapsedMicros);
 }
 
-void StepperMotor::singleMotorStep(unsigned long elapsedMicros){
+void StepperMotor::singleMotorStep(unsigned int elapsedMicros){
   //while steps remain, cycle between setting step pins high for fixed delay time and low for fixed delay time
   // to move motor at desired speed (defined by delay time)
   if (steps > 0) {
@@ -110,21 +113,20 @@ void StepperMotor::singleMotorStep(unsigned long elapsedMicros){
       // digital write is slow enough to not need a delay.
       // digital write will take about 6us
       digitalWrite(stepPin, LOW);
-      steps--;
       stepDelay = true;
     }
     else {
       if(currentStepDelayDuration < stepRunTime){
         stepRunTime = 0;
+        steps--;
         encoderControlledSteps();
         stepDelay = false;
-        updateAcceleration();
       }
     }
   }
 }
 
-void StepperMotor::dualMotorStep(unsigned long elapsedMicros){
+void StepperMotor::dualMotorStep(unsigned int elapsedMicros){
   if (steps > 0) {
     //control individual motor speed to keep axis aligned
     stepRunTime += elapsedMicros;
@@ -135,13 +137,11 @@ void StepperMotor::dualMotorStep(unsigned long elapsedMicros){
       // digital write is slow enough to not need a delay.
       // digital write will take about 6us
       digitalWrite(stepPin, LOW);
-      steps--;
       stepDelay = true;
     }
     else {
       if(stepDelayDual1 < stepRunTime){
         stepRunTime = 0;
-        encoderControlledSteps();
         stepDelay = false;
       }
     }
@@ -156,6 +156,7 @@ void StepperMotor::dualMotorStep(unsigned long elapsedMicros){
     else {
       if(stepDelayDual2 < stepRunTimeMotor2){
         stepRunTimeMotor2 = 0;
+        steps--;
         encoderControlledSteps();
         stepDelayMotor2 = false;
         
@@ -165,15 +166,26 @@ void StepperMotor::dualMotorStep(unsigned long elapsedMicros){
         long encoderDifference = abs(encoder->getPosition()) - abs(encoder2->getPosition());
         stepDelayDual1 = currentStepDelayDuration + (encoderDifference * DUAL_MOTOR_CORRECTION);
         stepDelayDual2 = currentStepDelayDuration - (encoderDifference * DUAL_MOTOR_CORRECTION);
-        updateAcceleration();
       }
     }
   }
 }
 
+void StepperMotor::updateAcceleration(unsigned long elapsedMicros){
+  accTimer += elapsedMicros;
+  if (ACC_TICK < accTimer) {
+    //accelerate 
+    if(currentStepDelayDuration > stepDelayDuration){
+      currentStepDelayDuration -= accelRate;
+    }
+    accTimer = 0;
+  }
+}
+
 void StepperMotor::encoderControlledSteps(){
-  if(steps <= 1 && encoderControlledStep){
+  if(steps < 1 && encoderControlledStep){
     long encoderPos = encoder->getPosition();
+    //TODO consider overshoot
     if(abs(encoderPos - targetEncoderValue) > ENCODER_PRECISION){
       //recalculate steps
       steps = abs(encoderPos - targetEncoderValue) / ENC_STEP_CONV_FACTOR;
@@ -196,25 +208,6 @@ void StepperMotor::setDirection(bool dir){
     else 
       digitalWrite(dirPin2, dir);
   }
-}
-
-void StepperMotor::updateAcceleration(){
-  //update acceleration
-  if(steps * accelRate < maxStepDelayDuration - currentStepDelayDuration){
-    //deceleration
-    if(currentStepDelayDuration < maxStepDelayDuration){
-      currentStepDelayDuration += accelRate;
-    }
-  }else if(currentStepDelayDuration > stepDelayDuration){
-    //acceleration  
-    currentStepDelayDuration -= accelRate;
-  }
-  
-  //constrain step delay
-  if(currentStepDelayDuration < stepDelayDuration) 
-    currentStepDelayDuration = stepDelayDuration;
-  else if (currentStepDelayDuration > maxStepDelayDuration)
-    currentStepDelayDuration = maxStepDelayDuration;
 }
 
 void StepperMotor::setSpeed(int speed){ 
