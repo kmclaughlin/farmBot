@@ -140,7 +140,7 @@ void StepperMotor::dualMotorStep(unsigned int elapsedMicros){
       stepDelay = true;
     }
     else {
-      if(stepDelayDual1 < stepRunTime){
+      if(stepDelayDual2 < stepRunTime){
         stepRunTime = 0;
         stepDelay = false;
       }
@@ -163,9 +163,19 @@ void StepperMotor::dualMotorStep(unsigned int elapsedMicros){
         // set pulse duration for each motor dependant on how far in front or behind it is
         //slow down the one further ahead, ie increase pulse duration
         // only need to update each step
-        long encoderDifference = abs(encoder->getPosition()) - abs(encoder2->getPosition());
-        stepDelayDual1 = currentStepDelayDuration + (encoderDifference * DUAL_MOTOR_CORRECTION);
-        stepDelayDual2 = currentStepDelayDuration - (encoderDifference * DUAL_MOTOR_CORRECTION);
+        int encoderDifference = encoder->getPosition() - encoder2->getPosition();
+        int correction = encoderDifference * DUAL_MOTOR_CORRECTION;
+        if (abs(correction) > (maxStepDelayDuration - stepDelayDuration) / 10){
+          correction = ((maxStepDelayDuration - stepDelayDuration) / 10) * correction / abs(correction);
+        }
+        if (direction) {
+          stepDelayDual1 = currentStepDelayDuration + (encoderDifference * DUAL_MOTOR_CORRECTION);
+          stepDelayDual2 = currentStepDelayDuration - (encoderDifference * DUAL_MOTOR_CORRECTION);
+        }
+        else{
+          stepDelayDual1 = currentStepDelayDuration - (encoderDifference * DUAL_MOTOR_CORRECTION);
+          stepDelayDual2 = currentStepDelayDuration + (encoderDifference * DUAL_MOTOR_CORRECTION);
+        }
       }
     }
   }
