@@ -175,6 +175,12 @@ try:
 
             return status   
 
+        @cherrypy.expose
+        def getImage():
+
+            image = "NOT YET OPERATIONAL"
+            
+            return image
     if __name__ == '__main__':
 
         cherrypy.config.update(
