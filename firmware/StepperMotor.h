@@ -1,51 +1,47 @@
 #ifndef STEPPER_MOTOR_H
 #define STEPPER_MOTOR_H
-#include "Arduino.h"
+//#include "Arduino.h"
 #include "Encoder.h"
-
+#include "Config.h"
 
 class StepperMotor {
   public:
-    StepperMotor(int stepPin, int dirPin, int enablePin, unsigned long pulseDuration = 1000);
+    StepperMotor(int stepPin, int dirPin, int enablePin, int speed, int minSpeed, unsigned int stepsPerMM, int accelRate);
     StepperMotor(int stepPin1, int dirPin1, int enablePin1, int stepPin2, int dirPin2, int enablePin2,
-        boolean opposing, unsigned long pulseDuration);
+        boolean opposing, int speed, int minSpeed, unsigned int stepsPerMM, int accelRate);
     void attachEncoder(Encoder *encdr1, Encoder *encdr2 = NULL) {encoder = encdr1; encoder2 = encdr2;};
     void moveEncoderSteps(int steps);
     void setSteps(int steps, bool dir);
-    bool isMoving() {return ((mSteps > 0) || encoderControlledStep);};
-    bool isEnabled() {return enabled;};
+    bool isMoving() { return ((steps > 0) || encoderControlledStep);};
+    bool isEnabled() { return enabled;};
     Encoder* getEncoder() { return encoder;}; // returns primary encoder
-    void step(unsigned long elapsedMicros);
+    void step(unsigned int elapsedMicros);
     void enable(bool value);
-    void setPulseDuration(unsigned long pulseDuration){ mPulseDuration = pulseDuration; };
     long getTargetEncoderValue() {return targetEncoderValue; };
-  protected:
+    void setSpeed(int speed);
+    void setMinSpeed(int minSpeed);
+    
+  private:
+  void commonInitialise();
     void setDirection(bool dir);
-    void singleMotorStep(unsigned long elapsedMicros);
-    void dualMotorStep(unsigned long elapsedMicros);
+    void singleMotorStep(unsigned int elapsedMicros);
+    void dualMotorStep(unsigned int elapsedMicros);
     void encoderControlledSteps();
-    int mStepPin;
-    int mDirPin;
-    int mEnablePin;
-    int mStepPin2;
-    int mDirPin2;
-    int mEnablePin2;
-    int mSteps = 0;
-    bool dualMotor = false;
-    bool mOpposing;
-    bool stepping = false;
-    bool steppingMotor2 = false;
-    bool enabled = false;
+    void updateAcceleration(unsigned long elapsedMicros);
+    
+    int stepPin, dirPin, enablePin;
+    int stepPin2, dirPin2, enablePin2;
+    int speed, minSpeed, accelRate, accTimer;
+    unsigned int stepsPerMM;
+    volatile int steps;
+    volatile long currentStepDelayDuration;
+    long maxStepDelayDuration, stepDelayDuration, stepDelayDual1, stepDelayDual2;
+    bool dualMotor, opposing, stepDelay, stepDelayMotor2, enabled;
     bool direction;
-    unsigned long mPulseDuration = 0;
-    unsigned long pulseDurationDual1;
-    unsigned long pulseDurationDual2;
-    unsigned long mStepRunTime = 0;
-    unsigned long mStepRunTimeMotor2 = 0;
-    Encoder *encoder;
-    Encoder *encoder2;
-    long targetEncoderValue = 0;
-    bool encoderControlledStep = false;
+    unsigned int stepRunTime, stepRunTimeMotor2;
+    Encoder *encoder, *encoder2;
+    long targetEncoderValue;
+    bool encoderControlledStep;
 };
 
 #endif

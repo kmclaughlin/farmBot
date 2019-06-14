@@ -1,178 +1,204 @@
 #include "StepperMotor.h"
-#define MOTOR_ENABLE_DELAY 100
-#define ENCODER_PRECISION 2
-#define DUAL_MOTOR_CORRECTION 10
 
-StepperMotor::StepperMotor(int stepPin, int dirPin, int enablePin, unsigned long pulseDuration){
-  mStepPin = stepPin; 
-  mDirPin = dirPin;
-  mEnablePin = enablePin;
+StepperMotor::StepperMotor(int stepPin, int dirPin, int enablePin, int speed, int minSpeed, unsigned int stepsPerMM, int accelRate){
+  this->stepPin = stepPin; 
+  this->dirPin = dirPin;
+  this->enablePin = enablePin;
   
-  pinMode(mStepPin, OUTPUT);
-  pinMode(mDirPin, OUTPUT);
-  pinMode(mEnablePin, OUTPUT);
-
+  pinMode(stepPin, OUTPUT);
+  pinMode(dirPin, OUTPUT);
+  pinMode(enablePin, OUTPUT);
+  
   dualMotor = false;
-  mOpposing = false;
-
-  //set motors off
-  enable(false);
-  setDirection(true);
-
-  mPulseDuration = pulseDuration;
+  opposing = false;
+  this->stepsPerMM = stepsPerMM;
+  this->accelRate = accelRate;
+  setSpeed(speed);
+  setMinSpeed(minSpeed);
+  commonInitialise();
 }
 
 StepperMotor::StepperMotor(int stepPin1, int dirPin1, int enablePin1, int stepPin2, int dirPin2, int enablePin2,
-        boolean opposing = true, unsigned long pulseDuration = 1000){
-  mStepPin = stepPin1; 
-  mDirPin = dirPin1;
-  mEnablePin = enablePin1;
+        boolean opposing, int speed, int minSpeed, unsigned int stepsPerMM, int accelRate){
+  this->stepPin = stepPin1; 
+  this->dirPin = dirPin1;
+  this->enablePin = enablePin1;
   
-  mStepPin2 = stepPin2; 
-  mDirPin2 = dirPin2;
-  mEnablePin2 = enablePin2;
+  this->stepPin2 = stepPin2; 
+  this->dirPin2 = dirPin2;
+  this->enablePin2 = enablePin2;
   
-  pinMode(mStepPin, OUTPUT);
-  pinMode(mDirPin, OUTPUT);
-  pinMode(mEnablePin, OUTPUT);
+  pinMode(stepPin, OUTPUT);
+  pinMode(dirPin, OUTPUT);
+  pinMode(enablePin, OUTPUT);
   
-  pinMode(mStepPin2, OUTPUT);
-  pinMode(mDirPin2, OUTPUT);
-  pinMode(mEnablePin2, OUTPUT);
+  pinMode(stepPin2, OUTPUT);
+  pinMode(dirPin2, OUTPUT);
+  pinMode(enablePin2, OUTPUT);
 
   dualMotor = true;
-  mOpposing = opposing;
-  
+  this->opposing = opposing;
+  this->stepsPerMM = stepsPerMM;
+  this->accelRate = accelRate;
+  setSpeed(speed);
+  setMinSpeed(minSpeed);
+  commonInitialise();
+}
+
+void StepperMotor::commonInitialise(){
   //set motors off
   enable(false);
   setDirection(true);
 
-  mPulseDuration = pulseDuration;
-  pulseDurationDual1 = pulseDuration;
-  pulseDurationDual1 = pulseDuration;
+  stepDelayDual1 = currentStepDelayDuration;
+  stepDelayDual2 = currentStepDelayDuration;
+
+  stepRunTime = 0;
+  stepRunTimeMotor2 = 0;
+  targetEncoderValue = 0;
+  encoderControlledStep = false;
+  
+  stepDelay = false;
+  stepDelayMotor2 = false;
+  steps = 0;
+  accTimer = 0;
 }
 
 void StepperMotor::setSteps(int steps, bool dir){
   encoderControlledStep = false;
   //set motor direction
   setDirection(dir);
-  mSteps = steps;
+  this->steps = abs(steps);
+  currentStepDelayDuration = maxStepDelayDuration;
 }
 
-void StepperMotor::moveEncoderSteps(int steps){
-  encoderControlledStep = true;
-  targetEncoderValue = encoder->getPosition() + steps;
-  //set motor direction
-  setDirection(steps > 0);
+//TODO doesn't allow for new instructions during movement
+void StepperMotor::moveEncoderSteps(int encoderSteps){
+  encoderControlledStep = abs(encoderSteps) > 0;
+  targetEncoderValue = encoder->getPosition() + encoderSteps;
+  // set motor direction
+  setDirection(encoderSteps > 0);
   // encoder steps are not equal to motor steps. Approx 1 mstep to 1.76 estep 
-  mSteps = steps / 2;
+  steps = abs(encoderSteps) / ENC_STEP_CONV_FACTOR;
+  currentStepDelayDuration = maxStepDelayDuration;
 }
 
-void StepperMotor::enable(bool value){
-  enabled = value;
-  digitalWrite(mEnablePin, !value);
+void StepperMotor::enable(bool enable){
+  enabled = enable;
+  digitalWrite(enablePin, !enabled);
   if (dualMotor)
-    digitalWrite(mEnablePin2, !value);
+    digitalWrite(enablePin2, !enabled);
   //delay to allow motor state to settle
   delay(MOTOR_ENABLE_DELAY);
   // reset steps if disabling
-  if(!value)
-    mSteps = 0;
+  if(!enabled)
+    steps = 0;
 }
 
-void StepperMotor::step(unsigned long elapsedMicros){
+void StepperMotor::step(unsigned int elapsedMicros){
   if (dualMotor)
     dualMotorStep(elapsedMicros);
   else
     singleMotorStep(elapsedMicros);
+  updateAcceleration(elapsedMicros);
 }
 
-void StepperMotor::singleMotorStep(unsigned long elapsedMicros){
+void StepperMotor::singleMotorStep(unsigned int elapsedMicros){
   //while steps remain, cycle between setting step pins high for fixed delay time and low for fixed delay time
   // to move motor at desired speed (defined by delay time)
-  mStepRunTime += elapsedMicros;
-  if(mPulseDuration < mStepRunTime){
-    mStepRunTime = 0;
-    encoderControlledSteps();
-    //TODO replace these digital writes with port manipulation
-    if (mSteps > 0) {
-      if(!stepping) {
-        digitalWrite(mStepPin, HIGH);
-        if (dualMotor)
-            digitalWrite(mStepPin2, HIGH);
-        stepping = true;
-      }
-      else {
-        digitalWrite(mStepPin, LOW);
-        if (dualMotor)
-            digitalWrite(mStepPin2, LOW);
-        stepping = false;
-        mSteps--;
+  if (steps > 0) {
+    stepRunTime += elapsedMicros;
+    if(!stepDelay) {
+      digitalWrite(stepPin, HIGH);
+      // digital write is slow enough to not need a delay.
+      // digital write will take about 6us
+      digitalWrite(stepPin, LOW);
+      stepDelay = true;
+    }
+    else {
+      if(currentStepDelayDuration < stepRunTime){
+        stepRunTime = 0;
+        steps--;
+        encoderControlledSteps();
+        stepDelay = false;
       }
     }
   }
 }
 
-void StepperMotor::dualMotorStep(unsigned long elapsedMicros){
-  //control individual motor speed to keep axis aligned
-  mStepRunTime += elapsedMicros;
-  mStepRunTimeMotor2 += elapsedMicros;
-  
-
-  //long encoderDifference = encoder->getPosition() - encoder2->getPosition();
-  //pulseDurationDual1 = mPulseDuration;// + (encoderDifference * DUAL_MOTOR_CORRECTION);
-  //pulseDurationDual2 = mPulseDuration;// - (encoderDifference * DUAL_MOTOR_CORRECTION);
-    
-  if(pulseDurationDual1 < mStepRunTime){
-    // set pulse duration for each motor dependant on how far in front or behind it is
-    //slow down the one further ahead, ie increase pulse duration
-    // only need to update each step
-    if(stepping) {
-      long encoderDifference = abs(encoder->getPosition()) - abs(encoder2->getPosition());
-      pulseDurationDual1 = mPulseDuration + (encoderDifference * DUAL_MOTOR_CORRECTION);
-      pulseDurationDual2 = mPulseDuration - (encoderDifference * DUAL_MOTOR_CORRECTION);
+void StepperMotor::dualMotorStep(unsigned int elapsedMicros){
+  if (steps > 0) {
+    //control individual motor speed to keep axis aligned
+    stepRunTime += elapsedMicros;
+    stepRunTimeMotor2 += elapsedMicros;
+     
+    if(!stepDelay) {
+      digitalWrite(stepPin, HIGH);
+      // digital write is slow enough to not need a delay.
+      // digital write will take about 6us
+      digitalWrite(stepPin, LOW);
+      stepDelay = true;
+    }
+    else {
+      if(stepDelayDual2 < stepRunTime){
+        stepRunTime = 0;
+        stepDelay = false;
+      }
     }
     
-    mStepRunTime = 0;
-    encoderControlledSteps();
-    //TODO replace these digital writes with port manipulation
-    if (mSteps > 0) {
-      if(!stepping) {
-        digitalWrite(mStepPin, HIGH);
-        stepping = true;
-      }
-      else {
-        digitalWrite(mStepPin, LOW);
-        stepping = false;
-        //reduce steps only on motor 1
-        mSteps--;
+    if(!stepDelayMotor2) {
+      digitalWrite(stepPin2, HIGH);
+      // digital write is slow enough to not need a delay.
+      // digital write will take about 6us
+      digitalWrite(stepPin2, LOW);
+      stepDelayMotor2 = true;
+    }
+    else {
+      if(stepDelayDual2 < stepRunTimeMotor2){
+        stepRunTimeMotor2 = 0;
+        steps--;
+        encoderControlledSteps();
+        stepDelayMotor2 = false;
+        
+        // set pulse duration for each motor dependant on how far in front or behind it is
+        //slow down the one further ahead, ie increase pulse duration
+        // only need to update each step
+        int encoderDifference = encoder->getPosition() - encoder2->getPosition();
+        int correction = encoderDifference * DUAL_MOTOR_CORRECTION;
+        if (abs(correction) > (maxStepDelayDuration - stepDelayDuration) / 10){
+          correction = ((maxStepDelayDuration - stepDelayDuration) / 10) * correction / abs(correction);
+        }
+        if (direction) {
+          stepDelayDual1 = currentStepDelayDuration + (encoderDifference * DUAL_MOTOR_CORRECTION);
+          stepDelayDual2 = currentStepDelayDuration - (encoderDifference * DUAL_MOTOR_CORRECTION);
+        }
+        else{
+          stepDelayDual1 = currentStepDelayDuration - (encoderDifference * DUAL_MOTOR_CORRECTION);
+          stepDelayDual2 = currentStepDelayDuration + (encoderDifference * DUAL_MOTOR_CORRECTION);
+        }
       }
     }
   }
-  
-  if(pulseDurationDual2 < mStepRunTimeMotor2){
-    mStepRunTimeMotor2 = 0;
-    //TODO replace these digital writes with port manipulation
-    if (mSteps > 0) {
-      if(!steppingMotor2) {
-        digitalWrite(mStepPin2, HIGH);
-        steppingMotor2 = true;
-      }
-      else {
-        digitalWrite(mStepPin2, LOW);
-        steppingMotor2 = false;
-      }
+}
+
+void StepperMotor::updateAcceleration(unsigned long elapsedMicros){
+  accTimer += elapsedMicros;
+  if (ACC_TICK < accTimer) {
+    //accelerate 
+    if(currentStepDelayDuration > stepDelayDuration){
+      currentStepDelayDuration -= accelRate;
     }
+    accTimer = 0;
   }
 }
 
 void StepperMotor::encoderControlledSteps(){
-  //include stepping check as only need to do this every full step
-  if(mSteps <= 1 && encoderControlledStep && !stepping){
-    long ePos = encoder->getPosition();
-    if(abs(encoder->getPosition() - targetEncoderValue) > ENCODER_PRECISION){
+  if(steps < 1 && encoderControlledStep){
+    long encoderPos = encoder->getPosition();
+    //TODO consider overshoot
+    if(abs(encoderPos - targetEncoderValue) > ENCODER_PRECISION){
       //recalculate steps
-      mSteps = abs(encoder->getPosition() - targetEncoderValue) / 2;
+      steps = abs(encoderPos - targetEncoderValue) / ENC_STEP_CONV_FACTOR;
       //set direction again if overshot
       //if(((targetEncoderValue - encoder->getPosition()) > 0) != direction)
         //setDirection((targetEncoderValue - encoder->getPosition()) > 0);
@@ -185,12 +211,22 @@ void StepperMotor::encoderControlledSteps(){
 
 void StepperMotor::setDirection(bool dir){
   direction = dir;
-  digitalWrite(mDirPin, dir);
+  digitalWrite(dirPin, dir);
   if (dualMotor){
-    if (mOpposing)
-      digitalWrite(mDirPin2, !dir);
+    if (opposing)
+      digitalWrite(dirPin2, !dir);
     else 
-      digitalWrite(mDirPin2, dir);
+      digitalWrite(dirPin2, dir);
   }
+}
+
+void StepperMotor::setSpeed(int speed){ 
+  this->speed = speed;
+  stepDelayDuration = (long)1000000 / ((long) speed * (long) stepsPerMM);
+}
+
+void StepperMotor::setMinSpeed(int minSpeed){ 
+  this->minSpeed = minSpeed;
+  maxStepDelayDuration = (long)1000000 / ((long) minSpeed * (long) stepsPerMM);
 }
 

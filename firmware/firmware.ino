@@ -20,28 +20,15 @@ bool lightState = false;
 bool waterState = false;
 bool vacuumState = false;
 
-void processInstruction(char *instruction);
-
-void enableMotors(bool value) {
-  motorsEnabled = value;
-  for (int i = 0; i < NUM_OF_MOTORS; i++)
-    motors[i]->enable(value);
-  //start motor move timeout 
-  motorStuckTimeoutTimer = millis();
-}
-
+//Stepper motor and encoder polling interrupt
 bool interruptBusy = false;
-unsigned long lastInterruptTime = micros();
 void interrupt(void){
   if(!interruptBusy){
     interruptBusy = true;
-    unsigned long currentMicros = micros();
-    unsigned long interruptTime = currentMicros - lastInterruptTime;
-    lastInterruptTime = currentMicros;
     //handle motor movement by interrupt
     //step motors
     for (int i = 0; i < NUM_OF_MOTORS; i++){
-      motors[i]->step(interruptTime);
+      motors[i]->step(INTERRUPT_TIME);
     }
     //process encoders
     for (int i = 0; i < NUM_OF_ENCODERS; i++){
@@ -52,31 +39,28 @@ void interrupt(void){
 }
 
 void setup() {
-  //set up lighting
+  //set up peripherals
   pinMode(LIGHTING_PIN, OUTPUT);
   pinMode(WATER_PIN, OUTPUT);
   pinMode(VACUUM_PIN, OUTPUT);
+  // start with all off
   digitalWrite(LIGHTING_PIN, LOW);
   digitalWrite(WATER_PIN, LOW);
   digitalWrite(VACUUM_PIN, LOW);
   
-  //Serial.begin(115200);
-  Serial.begin(9600);
+  Serial.begin(BAUD_RATE);
   
   //initialise encoders
-  encoders[0] = new Encoder(X_ENCDR_A, X_ENCDR_B, ENC_X_A_BYTE, ENC_X_B_BYTE, 
-                            &ENC_X_A_PORT, &ENC_X_B_PORT, false);
-  encoders[1] = new Encoder(X2_ENCDR_A, X2_ENCDR_B, ENC_X2_A_BYTE, ENC_X2_B_BYTE, 
-                            &ENC_X2_A_PORT, &ENC_X2_B_PORT,  false);
-  encoders[2] = new Encoder(Y_ENCDR_A, Y_ENCDR_B, ENC_Y_A_BYTE, ENC_Y_B_BYTE, 
-                            &ENC_Y_A_PORT, &ENC_Y_B_PORT, false);
-  encoders[3] = new Encoder(Z_ENCDR_A, Z_ENCDR_B, ENC_Z_A_BYTE, ENC_Z_B_BYTE, 
-                            &ENC_Z_A_PORT, &ENC_Z_B_PORT, false);
+  encoders[0] = new Encoder(ENC_X_A_BYTE, ENC_X_B_BYTE, &ENC_X_A_PORT, &ENC_X_B_PORT, false);
+  encoders[1] = new Encoder(ENC_X2_A_BYTE, ENC_X2_B_BYTE, &ENC_X2_A_PORT, &ENC_X2_B_PORT, false);
+  encoders[2] = new Encoder(ENC_Y_A_BYTE, ENC_Y_B_BYTE, &ENC_Y_A_PORT, &ENC_Y_B_PORT, false);
+  encoders[3] = new Encoder(ENC_Z_A_BYTE, ENC_Z_B_BYTE, &ENC_Z_A_PORT, &ENC_Z_B_PORT, false);
                             
   //initialise Motors
-  motors[0] = new StepperMotor(X_STEP_PIN, X_DIR_PIN, X_ENABLE_PIN, X2_STEP_PIN, X2_DIR_PIN, X2_ENABLE_PIN, true, MAX_STEP_PULSE);
-  motors[1] = new StepperMotor(Y_STEP_PIN, Y_DIR_PIN, Y_ENABLE_PIN, 1000);
-  motors[2] = new StepperMotor(Z_STEP_PIN, Z_DIR_PIN, Z_ENABLE_PIN, 1000);
+  motors[0] = new StepperMotor(X_STEP_PIN, X_DIR_PIN, X_ENABLE_PIN, X2_STEP_PIN, X2_DIR_PIN, 
+                  X2_ENABLE_PIN, true, X_SPEED, X_MIN_SPEED, X_STEPS_PER_MM, X_ACCEL_RATE);
+  motors[1] = new StepperMotor(Y_STEP_PIN, Y_DIR_PIN, Y_ENABLE_PIN, Y_SPEED, Y_MIN_SPEED, Y_STEPS_PER_MM, Y_ACCEL_RATE);
+  motors[2] = new StepperMotor(Z_STEP_PIN, Z_DIR_PIN, Z_ENABLE_PIN, Z_SPEED, Z_MIN_SPEED, Z_STEPS_PER_MM, Z_ACCEL_RATE);
 
   motors[0]->attachEncoder(encoders[0], encoders[1]);
   motors[1]->attachEncoder(encoders[2]);
@@ -103,12 +87,11 @@ void readSerial(){
   {
     char nextChar = Serial.read();
     //if char is new line last instruction complete, process instruction
-    if(nextChar == ';'){
+    if(nextChar == '\n'){
       if(instIndex > 0) {
         //make sure rest of instruction is cleared
         for (int i = instIndex; i < INST_ARRAY_LEN; i++)
           instruction[i] = NULL;
-        //instruction[instIndex] = '\n';
         //send instruction for processing
         processInstruction(instruction);
         instIndex = 0;
@@ -328,9 +311,17 @@ void processInstruction(char *input){
   }
 }
 
+void enableMotors(bool value) {
+  motorsEnabled = value;
+  for (int i = 0; i < NUM_OF_MOTORS; i++)
+    motors[i]->enable(value);
+  //start motor move timeout 
+  motorStuckTimeoutTimer = millis();
+}
+
 String getState(){
   //Format
-  //xxxxxyyyyyzzzzzLE
+  //xxxxxyyyyyzzzzzSLE
   //x, y, z - 5 digits of x, y, z encoder absolute position 
   //S - binary encoded x, y, z, encoder sign bit
   //L - binary encoded light water vacuum state
@@ -399,6 +390,7 @@ void checkMotorsStuck(){
     //if the motor is trying to move
       if (motors[i]->isMoving()) {
         //check if it has moved
+        //todo check on both x axis encoders make isStuck method of motor, different for dual single
         isMotorStuck[i] = motors[i]->getEncoder()->movementCheck() < STUCK_ENCODER_THRESHOLD;
         noMotorsStuck = noMotorsStuck && !isMotorStuck[i];
       }
