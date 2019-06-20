@@ -390,8 +390,7 @@ void checkMotorsStuck(){
     //if the motor is trying to move
       if (motors[i]->isMoving()) {
         //check if it has moved
-        //todo check on both x axis encoders make isStuck method of motor, different for dual single
-        isMotorStuck[i] = motors[i]->getEncoder()->movementCheck() < STUCK_ENCODER_THRESHOLD;
+        isMotorStuck[i] = motors[i]->movementCheck();
         noMotorsStuck = noMotorsStuck && !isMotorStuck[i];
       }
       else 

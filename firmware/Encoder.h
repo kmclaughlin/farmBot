@@ -11,6 +11,7 @@ class Encoder{
     long getPosition() {return position * inverted;};
     void setPosition(long newPosition) { position = newPosition; };
     int  movementCheck() { return abs(prvMovementCheckPosition - position);};
+    bool  movementDir() { return (position - prvMovementCheckPosition) > 0;};
     void resetMovementCheck() { prvMovementCheckPosition = position;};
   private:
     void readChannels();

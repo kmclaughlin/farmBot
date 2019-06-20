@@ -140,7 +140,7 @@ void StepperMotor::dualMotorStep(unsigned int elapsedMicros){
       stepDelay = true;
     }
     else {
-      if(stepDelayDual2 < stepRunTime){
+      if(stepDelayDual1 < stepRunTime){
         stepRunTime = 0;
         stepDelay = false;
       }
@@ -172,20 +172,6 @@ void StepperMotor::updateAcceleration(unsigned long elapsedMicros){
       currentStepDelayDuration -= accelRate;
     }
     accTimer = 0;
-  }
-  if (dualMotor){
-    //Set dual motor speed correction
-    int encoderDifference = encoder->getPosition() - encoder2->getPosition();
-    int correction = encoderDifference * DUAL_MOTOR_CORRECTION;
-    //if (abs(correction) > (maxStepDelayDuration - stepDelayDuration) / 10){
-    //  correction = ((maxStepDelayDuration - stepDelayDuration) / 10) * correction / abs(correction);
-    //}
-    if (direction) {
-      stepDelayDual2 = currentStepDelayDuration - (encoderDifference * DUAL_MOTOR_CORRECTION);
-    }
-    else{
-      stepDelayDual2 = currentStepDelayDuration + (encoderDifference * DUAL_MOTOR_CORRECTION);
-    }
   }
 }
 
@@ -225,5 +211,13 @@ void StepperMotor::setSpeed(int speed){
 void StepperMotor::setMinSpeed(int minSpeed){ 
   this->minSpeed = minSpeed;
   maxStepDelayDuration = (long)1000000 / ((long) minSpeed * (long) stepsPerMM);
+}
+
+//checks motor are moving and moving the correct direction
+// todo make dual motor
+bool StepperMotor::movementCheck(){
+  bool encoderMoving = encoder->movementCheck() > STUCK_ENCODER_THRESHOLD;
+  bool encoderCorrectDirection = !(encoder->movementDir() ^ direction);
+  return !(encoderMoving && encoderCorrectDirection);
 }
 
