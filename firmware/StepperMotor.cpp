@@ -204,13 +204,13 @@ void StepperMotor::setDirection(bool dir){
 }
 
 void StepperMotor::setSpeed(int speed){ 
-  this->speed = speed;
-  stepDelayDuration = (long)1000000 / ((long) speed * (long) stepsPerMM);
+  this->speed = abs(speed);
+  stepDelayDuration = (long)1000000 / ((long) this->speed * (long) stepsPerMM);
 }
 
 void StepperMotor::setMinSpeed(int minSpeed){ 
-  this->minSpeed = minSpeed;
-  maxStepDelayDuration = (long)1000000 / ((long) minSpeed * (long) stepsPerMM);
+  this->minSpeed = abs(minSpeed);
+  maxStepDelayDuration = (long)1000000 / ((long) this->minSpeed * (long) stepsPerMM);
 }
 
 //checks motor are moving and moving the correct direction

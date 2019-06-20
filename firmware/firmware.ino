@@ -126,6 +126,9 @@ void processInstruction(char *input){
       Serial.println("d: disable all motors");
       Serial.println("x: begin/end continuous encoder value stream");
       Serial.println("b: allow movement after jam");
+      Serial.println("a1/0: Set Verbose responses on/off");
+      Serial.println("q #1 #2: motor #1 max speed to #2 mm/s");
+      Serial.println("y #1 #2: motor #1 acceleration to #2 ");
       Serial.println("p1/0: self preservation on/off (not recommended to turn off)");
       Serial.println("s: return total farmbot state");
       break;
@@ -166,6 +169,32 @@ void processInstruction(char *input){
       }
       else
         Serial.println("Error: cannot move. Axis jammed. Send manual reset command 'b'");
+      break;
+    case 'q':
+      {
+        int motor = input[2] - 48;
+        int speed = atol(input+4);
+        motors[motor]->setSpeed(speed);
+        if(verboseResponses) {
+          Serial.print("motor speed: ");
+          Serial.print(motor);
+          Serial.print(" ");
+          Serial.println(speed);
+        }
+      }
+      break;
+    case 'y':
+      {
+        int motor = input[2] - 48;
+        int accel = atol(input+4);
+        motors[motor]->setAccel(accel);
+        if(verboseResponses) {
+          Serial.print("motor accel: ");
+          Serial.print(motor);
+          Serial.print(" ");
+          Serial.println(accel);
+        }
+      }
       break;
     case 'l':
       if(input[1] == '1'){

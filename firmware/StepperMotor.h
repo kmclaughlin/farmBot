@@ -19,6 +19,7 @@ class StepperMotor {
     void enable(bool value);
     long getTargetEncoderValue() {return targetEncoderValue; };
     void setSpeed(int speed);
+    void setAccel(int accel) { accelRate = accel;};
     void setMinSpeed(int minSpeed);
     bool movementCheck();
     
