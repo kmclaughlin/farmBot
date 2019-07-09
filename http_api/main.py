@@ -28,6 +28,8 @@ try:
 
         connected = False
         serialMonitorData = ["-,-"]*SerialMonitorLines
+        latestMessage = ""
+        previousMessage = ""
 
         @cherrypy.expose
         def index(self):
@@ -78,10 +80,10 @@ try:
                     log.write(currentDateTime+","+command+"\n")
 
                 #Write Command Passed to Serial Port
-                self.serial.reset_output_buffer()
-                payload = (str(command)+"\n").encode()
+                payload = (command+'\n').encode('ascii')
                 self.serial.write(payload)
-                
+                time.sleep(0.008)
+
                 status = currentDateTime + " - INFO: '" + command + "' sent succesfully."
 
             except:
@@ -106,10 +108,12 @@ try:
                 
                 try:
                     if self.serial.in_waiting > 0:
+
                         response = self.serial.readline().decode('utf-8')
                     
                         response = response.strip()
                         logLine = currentDateTime+","+str(response)
+                        self.latestMessage = response
 
                         #Add response to receive log
                         with open ("http_api/public/receiveLog.csv", "a+") as log:
@@ -118,8 +122,13 @@ try:
                         #Add received data to serial monitor array
                         self.serialMonitorData.pop(0)
                         self.serialMonitorData.append(logLine)        
-
-                        print(logLine)
+                        #print(logLine)
+                    if self.serial.in_waiting > 200:
+                        self.serial.reset_input_buffer()
+                        dump = self.serial.readline().decode('utf-8')
+                        currentDateTime = time.strftime("%d/%m/%Y %H:%M:%S")
+                        status = currentDateTime + " - ERROR: Buffer full dumping '"+str(dump)+"'."
+                        print(status)
                 except:
                     self.connected = False
                     currentDateTime = time.strftime("%d/%m/%Y %H:%M:%S")
@@ -141,10 +150,20 @@ try:
             return table
 
         @cherrypy.expose
-        def getLine(self):
+        def getLast(self):
+            return self.latestMessage
 
-            line = self.serialMonitorData[SerialMonitorLines-1]
-            return line
+        @cherrypy.expose
+        def getLatest(self):
+
+            if self.previousMessage == self.latestMessage:
+                message = "" 
+            else:
+                message = self.latestMessage
+
+            self.previousMessage = self.latestMessage
+
+            return message
 
         @cherrypy.expose
         def connect(self):
@@ -154,7 +173,6 @@ try:
 
             if(self.connected == False):
                 
-
                 try:
                     #Open Serial Connection
                     self.serial = serial.Serial(
@@ -163,24 +181,38 @@ try:
                         parity=serial.PARITY_NONE,
                         stopbits=serial.STOPBITS_ONE,
                         bytesize=serial.EIGHTBITS,
-                        timeout=0.1
                         )
+                    time.sleep(1)
                     self.connected = True
                     self.receive()
-                    status = currentDateTime + " - INFO: Farmbot arduino connected to "+self.serial.name+"\n"
+                    status = "INFO: Farmbot arduino connected to "+self.serial.name+"."
                 except:
-                    status = currentDateTime + " - ERROR: Could not establish a connection with Arduino\n"
+                    status = "ERROR: Could not establish a connection with Farmbot arduino."
       
             print(status)
 
             return status   
 
         @cherrypy.expose
-        def getImage():
+        def disconnect(self):
+
+            status = "INFO: Farmbot arduino is not connected."
+
+            if(self.connected == True):
+                self.serial.close()
+                self.connected = False
+                status = "INFO: Farmbot arduino has been disconnected."
+
+            print(status)
+            return status   
+
+        @cherrypy.expose
+        def getImage(self):
 
             image = "NOT YET OPERATIONAL"
             
             return image
+
     if __name__ == '__main__':
 
         cherrypy.config.update(
